@@ -6,9 +6,10 @@ function App() {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
 
   useEffect(() => {
-    axios.get('http://localhost:5000/contacts')
+    axios.get('http://localhost:5001/contacts')
     .then(response => {
       // traitement de la réponse
+      setContacts(response.data)
     })
     .catch(error => {
       if (error.response) {
@@ -34,12 +35,38 @@ function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios.post('http://localhost:5000/contacts', formData)
-      .then(response => {
-        setContacts([...contacts, response.data]);
-        setFormData({ name: '', email: '', phone: '' });
-      })
-      .catch(error => console.log(error));
+
+    const emailRegex = /^[^\s@]+\.+[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[0-9]{10}$/;
+
+    // Validation des champs email et téléphone
+    if (!emailRegex.test(formData.email)) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+
+    if (!phoneRegex.test(formData.phone)) {
+      alert('Please enter a valid phone number (10 digits).');
+      return;
+    }
+
+    // Vérifiez si le contact existe déjà
+    const isDuplicate = contacts.some(contact =>
+        contact.email === formData.email ||
+        (contact.name === formData.name && contact.phone === formData.phone)
+    );
+
+    if (isDuplicate) {
+      alert('A contact with the same email or name and phone number already exists.');
+      return;
+    }
+
+    axios.post('http://localhost:5001/contacts', formData)
+        .then(response => {
+          setContacts([...contacts, response.data]);
+          setFormData({ name: '', email: '', phone: '' }); // Réinitialiser les champs après l'ajout
+        })
+        .catch(error => console.log(error));
   };
 
   return (
@@ -74,7 +101,7 @@ function App() {
       </form>
       <ul>
         {contacts.map(contact => (
-          <li key={contact._id}>{contact.name} - {contact.email} - {contact.phone}</li>
+          <li key={contact.id}>{contact.name} - {contact.email} - {contact.phone}</li>
         ))}
       </ul>
     </div>
